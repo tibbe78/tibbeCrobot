@@ -11,6 +11,6 @@ UpdateBots.ps1 hämtar de senaste versionerna av bottar från github och sparar 
 ### obfuscate.bat
 obfuscate.bat gör din bot oläsbar, men fortfarande fungerande. PS. if else satser måste ha if() {kommando} else {kommando}. går ej att ha if () kommando else kommando. camelCase för variabler och PascalCase för funktioner är bra att använda.
 ### tibbeCrobot.c 
-full version av min bot med kommentarer osv. .c för att det är typ c kod och det är enklare för editors att veta det.
+full version av min bot med kommentarer osv. .c för att det är typ c kod och det är enklare för editors (notepad++) att veta det.
 ### tibbeCrobot.r 
 obfuscated version av tibbeCrobot.c same shit different package.
