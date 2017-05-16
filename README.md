@@ -12,21 +12,23 @@ UpdateBots.ps1 hämtar de senaste versionerna av bottar från github och sparar 
 
 ### [obfuscate.bat](https://github.com/tibbe78/tibbeCrobot/blob/master/obfuscate.bat)
 obfuscate.bat gör din bot oläsbar, men fortfarande fungerande. 
-PS. if else satser kan inte bara vara på nya rader. DS går ej att ha:
-```
+PS. if else satser kan inte bara vara på nya rader. 
+#### EJ OK:
+```C 
 if (true)
   kommando
 else
   kommando
-```
-Måste vara med mellanslag på samma rad eller med {}
-ex:
-```
+``` 
+
+#### OK med mellanslag 
+```C
 if (true) kommando
 else kommando
 ```
-eller:
-```
+
+#### OK med {}
+```C
 if (true) {
   kommando
 }
@@ -34,6 +36,7 @@ else {
   kommando
 }
 ```
+
 
 ### [tibbeCrobot.c](https://github.com/tibbe78/tibbeCrobot/blob/master/tibbeCrobot.c)
 full version av min bot med kommentarer osv. .c för att det är typ c kod och det är enklare för editors (notepad++) att veta det.
