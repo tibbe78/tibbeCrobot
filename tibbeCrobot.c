@@ -49,8 +49,10 @@ int
 tnkDir, 	/* the direction of the tank in 0-360 degrees */
 cOpAng, 	/* Current Angle of opponent */
 scnDist, 	/* Scan distance returned from scan 0 if not found max 700 for cannon reach */
-tnkWall, 	/* avoid wall */
-tnkTurn,	/* Is tank Turning */
+tnkWall, 	/* Are we inside wall zone? */
+tnkTurn,	/* have the tank turned? */
+inZone,		/* Is the tank in the wall zone */
+fireOk,		/* if it's ok to fire */
 pOpAng,		/* Prevoius angle of opponent */
 pScnDist; 	/* prevoius Scan distance returned from scan 0 if not found max 700 for cannon reach */
 
@@ -89,6 +91,7 @@ main()
 		tank max power (speed) = 100;
 		tank Thought (future relase) = 0;
 	*/
+	fireOk = 1;
 	
 	/* scnStat = 0;  First value 0 for not found and init */
 	if (loc_y() > loc_x()) drive((tnkDir = rand(80) + 5 - (loc_x()/11) - (loc_y()/11)),100);
@@ -104,26 +107,13 @@ main()
 	
 	while(1) {  
 		/* ----------------------- MAIN Logic for Wall Avoidance -------------------------- */
-		if (tnkWall){ /* have we hit a wall and should start turning */
-			if (tnkTurn) {  /* should we start turning (only once) */
-				if (loc_y() > loc_x()) (tnkDir = rand(80) + 5 - (loc_x()/11) - (loc_y()/11)); /* calc a new turn based on the x & y position of the tank., 11 is to get about 90 degree from position  */
-				else (tnkDir = rand(80) + 5 + (loc_x()/11) + (loc_y()/11)); /* calc a new turn based on the x & y position of the tank. flip if y<x., 11 is to get about 90 degree from position */
-				tnkTurn = 0; /* stop turning */
-			}
-			if (speed() < 50) { 
-				drive(tnkDir,100); /* if the speed is below 50, full speed ahead in new direction*/
-				tnkWall = 0;
-			}
-		}
-		else { /* if we are not in the wall zone */
+		
+		if (fireOk) { /* if it's ok to fire again. */
+			
 			/* ----------------------- MAIN Logic for Fireing -------------------------- */
 			if (DoScnHi()) { /* do a high scan to get a fire solution */
 				if (scnDist < 710) { 
 					cannon(cOpAng-((pOpAng-cOpAng) % 360),scnDist-(pScnDist-scnDist));
-				}
-				if (loc_x() > 850 || loc_x() < 150 || loc_y() > 850 || loc_y() < 150) { /* check if we get into the wall zone again */
-					tnkWall = 1; tnkTurn = 1; /* start the wall scenario and turn */
-					drive(tnkDir,0);  /* stop the engine */
 				}
 			} /* ----------------------- MAIN Logic for finding opponent again -------------------------- */
 			else if (DoScnMd(0)) { /* do a medium scan with first scan disable */
@@ -136,8 +126,34 @@ main()
 				if (DoScnMd(1) && !tnkWall) { /* do a medium scan with first scan enable */
 				} 
 			}
-		} /* End of Normal (Not Wall) scenario */
-		pOpAng = cOpAng; pScnDist = scnDist; /* uppdatera föregående värden */
+		} /* End of Fire ok scenario */
+		
+		if (tnkWall) { /* have we hit a wall and should start turning */
+			if (tnkTurn) {  /* should we start turning (only once) */
+				if (loc_y() > loc_x()) (tnkDir = rand(80) + 5 - (loc_x()/11) - (loc_y()/11)); /* calc a new turn based on the x & y position of the tank., 11 is to get about 90 degree from position  */
+				else (tnkDir = rand(80) + 5 + (loc_x()/11) + (loc_y()/11)); /* calc a new turn based on the x & y position of the tank. flip if y<x., 11 is to get about 90 degree from position */
+				tnkTurn = 0; /* stop turning */
+			}
+			if (speed() < 50) { 
+				drive(tnkDir,100); /* if the speed is below 50, full speed ahead in new direction*/
+				tnkWall = 0;
+				fireOk = 1;
+			}
+		} /* wall scenario */
+		else {	
+			pOpAng = cOpAng; pScnDist = scnDist; /* uppdatera föregående värden */
+			
+			if (loc_x() > 850 || loc_x() < 150 || loc_y() > 850 || loc_y() < 150) { /* check if we get into the wall zone again */
+				if (!inZone) {
+					tnkWall = 1; tnkTurn = 1; fireOk = 0; inZone = 1; /* start the wall scenario and turn */
+					drive(tnkDir,0); /* stop the engine */
+				}
+			}
+			else {
+				inZone = 0; 
+			}
+			
+		}
 	} /* End of while() */
 } /* End of main() */
 
@@ -154,8 +170,8 @@ DoScnLo(frstScn) {
 			return 1;
 		}
 		if (( scnDist = scan(cOpAng + 10, 10))) { 
-			cOpAng += 10;
-			return 1;
+		cOpAng += 10;
+		return 1;
 		}
 		if (( scnDist = scan(cOpAng - 10, 10))) {
 			cOpAng -= 10;
@@ -178,11 +194,6 @@ DoScnLo(frstScn) {
 		cOpAng -= 50;
 		return 1;
 	}	
-	if (loc_x() > 850 || loc_x() < 150 || loc_y() > 850 || loc_y() < 150) { /* check if we get into the wall zone again */
-		tnkWall = 1; tnkTurn = 1; /* start the wall scenario and turn */
-		drive(tnkDir,0); /* stop the engine */
-		return 0;
-	}
 	if (( scnDist = scan(cOpAng + 70, 10))) { 
 		cOpAng += 70;
 		return 1;
@@ -207,11 +218,6 @@ DoScnLo(frstScn) {
 		cOpAng -= 110;
 		return 1;
 	}	
-	if (loc_x() > 850 || loc_x() < 150 || loc_y() > 850 || loc_y() < 150) { /* check if we get into the wall zone again */
-		tnkWall = 1; tnkTurn = 1; /* start the wall scenario and turn */
-		drive(tnkDir,0); /* stop the engine */
-		return 0;
-	}
 	if (( scnDist = scan(cOpAng + 130, 10))) { 
 		cOpAng += 130;
 		return 1;
@@ -263,11 +269,6 @@ DoScnMd(frstScn) {
 		cOpAng -= 16;
 		return 1;
 	}		
-	if (loc_x() > 850 || loc_x() < 150 || loc_y() > 850 || loc_y() < 150) { /* check if we get into the wall zone again */
-		tnkWall = 1; tnkTurn = 1; /* start the wall scenario and turn */
-		drive(tnkDir,0); /* stop the engine */
-		return 0;
-	}
 	if (( scnDist = scan(cOpAng + 24, 4))) { 
 		cOpAng += 24;
 		return 1;
@@ -327,55 +328,4 @@ DoScnHi() {
 		return 1;
 	}	
 	return 0;
-}
-
-
-
-/*--------------------------------------------------------------------------------------------*/
-/* Calc distance with sqrt */
-ClcDist(xx, yy) {
-	return sqrt(((loc_x() - xx) * (loc_x() - xx)) + ((loc_y() - yy) * (loc_y() - yy)));
-}
-
-/*--------------------------------------------------------------------------------------------*/
-/* plot course returns degree 0-359 */
-PlotCrs(xx,yy) {	
-	/* atan only returns -90 to +90 */
-	
-	if (loc_x() != xx) {    
-		if (yy > loc_y()) { /* if north */
-			if (xx > loc_x()) return atan((100000 * (loc_y() - yy)) / (loc_x() - xx)); 	/* norr-höger, quadrant 1 */
-			else return 180 + atan((100000 * (loc_y() - yy)) / (loc_x() - xx)); 		/* norrvänster, quadrant 2 */ 
-		}
-		else { /* if south */
-			if (xx > loc_x()) return 359 + atan((100000 * (loc_y() - yy)) / (loc_x() - xx)); 	/* syd-höger, quadrant 4 */
-			else return 180 + atan((100000 * (loc_y() - yy)) / (loc_x() - xx)); 				/* syd-vänster, quadrant 3 */
-		}
-	}
-	else {
-		if (yy > loc_y()) return 90;		/* north */
-		else return 270;       			/* south */
-	}
-}
-
-
-/*--------------------------------------------------------------------------------------------*/
-/* plot Opponent course returns degree 0-359 */
-PltOpCr() {	
-	/* atan only returns -90 to +90 */
-	
-	if (pOpXPos != cOpXPos) {    
-		if (cOpYPos > pOpYPos) { /* if north */
-			if (cOpXPos > pOpXPos) return atan((100000 * (pOpYPos - cOpYPos)) / (pOpXPos - cOpXPos)); 	/* norr-höger, quadrant 1 */
-			else return 180 + atan((100000 * (pOpYPos - cOpYPos)) / (pOpXPos - cOpXPos)); 		/* norrvänster, quadrant 2 */ 
-		}
-		else { /* if south */
-			if (cOpXPos > pOpXPos) return 359 + atan((100000 * (pOpYPos - cOpYPos)) / (pOpXPos - cOpXPos)); 	/* syd-höger, quadrant 4 */
-			else return 180 + atan((100000 * (pOpYPos - cOpYPos)) / (pOpXPos - cOpXPos)); 				/* syd-vänster, quadrant 3 */
-		}
-	}
-	else {
-		if (cOpYPos > pOpYPos) return 90;		/* north */
-		else return 270;       			/* south */
-	}
 }
