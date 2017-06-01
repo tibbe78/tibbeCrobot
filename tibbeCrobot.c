@@ -108,13 +108,13 @@ main()
 	while(1) {  
 		/* ----------------------- MAIN Logic for Wall Avoidance -------------------------- */
 		
-		if (fireOk) { /* if it's ok to fire again. */
-			
+		if (fireOk) { /* if it's ok to fire. */
 			/* ----------------------- MAIN Logic for Fireing -------------------------- */
 			if (DoScnHi()) { /* do a high scan to get a fire solution */
-				if (scnDist < 710) { 
-					cannon(cOpAng-((pOpAng-cOpAng) % 360),scnDist-(pScnDist-scnDist));
-				}
+				if (scnDist < 710 && scnDist > 100) { 
+					cannon(cOpAng - ((pOpAng - cOpAng)/2),scnDist - ((pScnDist - scnDist)/2));
+				}		
+				
 			} /* ----------------------- MAIN Logic for finding opponent again -------------------------- */
 			else if (DoScnMd(0)) { /* do a medium scan with first scan disable */
 			}
@@ -132,24 +132,24 @@ main()
 			if (tnkTurn) {  /* should we start turning (only once) */
 				if (loc_y() > loc_x()) (tnkDir = rand(80) + 5 - (loc_x()/11) - (loc_y()/11)); /* calc a new turn based on the x & y position of the tank., 11 is to get about 90 degree from position  */
 				else (tnkDir = rand(80) + 5 + (loc_x()/11) + (loc_y()/11)); /* calc a new turn based on the x & y position of the tank. flip if y<x., 11 is to get about 90 degree from position */
-				tnkTurn = 0; /* stop turning */
+				tnkTurn = 0; /* don't turn anymore */
 			}
 			if (speed() < 50) { 
 				drive(tnkDir,100); /* if the speed is below 50, full speed ahead in new direction*/
 				tnkWall = 0;
 				fireOk = 1;
 			}
-		} /* wall scenario */
-		else {	
+		} /* end wall scenario */
+		else {	/* if not in a wall scenario */
 			pOpAng = cOpAng; pScnDist = scnDist; /* uppdatera föregående värden */
 			
-			if (loc_x() > 850 || loc_x() < 150 || loc_y() > 850 || loc_y() < 150) { /* check if we get into the wall zone again */
-				if (!inZone) {
+			if (loc_x() > 900 || loc_y() > 900 || loc_x() < 100 || loc_y() < 100) { /* check if we get into the wall zone again */
+				if (!inZone) { /* if we are not in the zone still, from previous turn */
 					tnkWall = 1; tnkTurn = 1; fireOk = 0; inZone = 1; /* start the wall scenario and turn */
-					drive(tnkDir,0); /* stop the engine */
+					drive(tnkDir,40); /* slow down to turn speed */
 				}
 			}
-			else {
+			else { /* we are not in the wall zone anymore */
 				inZone = 0; 
 			}
 			
@@ -170,22 +170,22 @@ DoScnLo(frstScn) {
 			return 1;
 		}
 		if (( scnDist = scan(cOpAng + 10, 10))) { 
-		cOpAng += 10;
-		return 1;
+			cOpAng += 10;
+			return 1;
 		}
 		if (( scnDist = scan(cOpAng - 10, 10))) {
 			cOpAng -= 10;
 			return 1;
 		}	
+		if (( scnDist = scan(cOpAng + 30, 10))) { 
+			cOpAng += 30;
+			return 1;
+		}
+		if (( scnDist = scan(cOpAng - 30, 10))) {
+			cOpAng -= 30;
+			return 1;
+		}	
 	}
-	if (( scnDist = scan(cOpAng + 30, 10))) { 
-		cOpAng += 30;
-		return 1;
-	}
-	if (( scnDist = scan(cOpAng - 30, 10))) {
-		cOpAng -= 30;
-		return 1;
-	}	
 	if (( scnDist = scan(cOpAng + 50, 10))) { 
 		cOpAng += 50;
 		return 1;
@@ -246,43 +246,43 @@ DoScnLo(frstScn) {
 }
 
 /*--------------------------------------------------------------------------------------------*/
-/* DoScnMe around with max 8 degree jumps starting from startDir up to 32 degree, 4 degree resolution */
+/* DoScnMe around with max 10 degree jumps starting from startDir up to 40 degree, 5 degree resolution */
 DoScnMd(frstScn) {	
 	if (frstScn) {
-		if (( scnDist = scan(cOpAng, 4))) { /* 4 degree resolution scan 4 + | + 4 */
+		if (( scnDist = scan(cOpAng, 5))) { /* 5 degree resolution scan 5 + | + 5 */
 			return 1;
 		}
-		if (( scnDist = scan(cOpAng + 8, 4))) { 
-			cOpAng += 8;
+		if (( scnDist = scan(cOpAng + 10, 5))) { 
+			cOpAng += 10;
 			return 1;
 		}
-		if (( scnDist = scan(cOpAng - 8, 4))) {
-			cOpAng -= 8;
+		if (( scnDist = scan(cOpAng - 10, 5))) {
+			cOpAng -= 10;
+			return 1;
+		}	
+		if (( scnDist = scan(cOpAng + 20, 5))) { 
+			cOpAng += 20;
+			return 1;
+		}
+		if (( scnDist = scan(cOpAng - 20, 5))) {
+			cOpAng -= 20;
 			return 1;
 		}	
 	}
-	if (( scnDist = scan(cOpAng + 16, 4))) { 
-		cOpAng += 16;
+	if (( scnDist = scan(cOpAng + 30, 5))) { 
+		cOpAng += 30;
 		return 1;
 	}
-	if (( scnDist = scan(cOpAng - 16, 4))) {
-		cOpAng -= 16;
-		return 1;
-	}		
-	if (( scnDist = scan(cOpAng + 24, 4))) { 
-		cOpAng += 24;
-		return 1;
-	}
-	if (( scnDist = scan(cOpAng - 24, 4))) {
-		cOpAng -= 24;
+	if (( scnDist = scan(cOpAng - 30, 5))) {
+		cOpAng -= 30;
 		return 1;
 	}	
-	if (( scnDist = scan(cOpAng + 32, 4))) { 
-		cOpAng += 32;
+	if (( scnDist = scan(cOpAng + 40, 5))) { 
+		cOpAng += 40;
 		return 1;
 	}
-	if (( scnDist = scan(cOpAng - 32, 4))) {
-		cOpAng -= 32;
+	if (( scnDist = scan(cOpAng - 40, 5))) {
+		cOpAng -= 40;
 		return 1;
 	}	
 	
@@ -292,39 +292,39 @@ DoScnMd(frstScn) {
 /*--------------------------------------------------------------------------------------------*/
 /* DoScnHi around with min 4 degree jumps starting from startDir up to 12 degree, 2 degree resolution */
 DoScnHi() {	
-	if (( scnDist = scan(cOpAng, 2))) { /* 2 degree resolution scan 2 + | + 2 */
+	if (( scnDist = scan(cOpAng, 3))) { /* 2 degree resolution scan 2 + | + 2 */
 		return 1;
 	}
-	if (( scnDist = scan(cOpAng + 4, 2))) { 
-		cOpAng += 4;
+	if (( scnDist = scan(cOpAng + 6, 3))) { 
+		cOpAng += 6;
 		return 1;
 	}
-	if (( scnDist = scan(cOpAng - 4, 2))) {
-		cOpAng -= 4;
+	if (( scnDist = scan(cOpAng - 6, 3))) {
+		cOpAng -= 6;
 		return 1;
 	}	
-	if (( scnDist = scan(cOpAng + 8, 2))) { 
-		cOpAng += 8;
-		return 1;
-	}
-	if (( scnDist = scan(cOpAng - 8, 2))) {
-		cOpAng -= 8;
-		return 1;
-	}		
-	if (( scnDist = scan(cOpAng + 12, 2))) { 
+	if (( scnDist = scan(cOpAng + 12, 3))) { 
 		cOpAng += 12;
 		return 1;
 	}
-	if (( scnDist = scan(cOpAng - 12, 2))) {
+	if (( scnDist = scan(cOpAng - 12, 3))) {
 		cOpAng -= 12;
 		return 1;
 	}		
-	if (( scnDist = scan(cOpAng + 16, 2))) { 
-		cOpAng += 16;
+	if (( scnDist = scan(cOpAng + 18, 3))) { 
+		cOpAng += 18;
 		return 1;
 	}
-	if (( scnDist = scan(cOpAng - 16, 2))) {
-		cOpAng -= 16;
+	if (( scnDist = scan(cOpAng - 18, 3))) {
+		cOpAng -= 18;
+		return 1;
+	}		
+	if (( scnDist = scan(cOpAng + 24, 3))) { 
+		cOpAng += 24;
+		return 1;
+	}
+	if (( scnDist = scan(cOpAng - 24, 3))) {
+		cOpAng -= 24;
 		return 1;
 	}	
 	return 0;
